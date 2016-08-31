@@ -13,6 +13,9 @@ from multiprocessing import reduction
 from setproctitle import setproctitle
 import redis
 import requests
+
+# ok so I know this is considered 'bad practice', but for a config file with 
+# just constants, it isn't bad. trust me!
 from config import *
 
 ################################################################################
@@ -135,11 +138,13 @@ while True:
 		## or they start with just a straight command
 		## we split the message up by spaces and work out stuff via horrible if statements
 
-		tags     = None
-		prefix   = None
-		username = None
-		command  = None
-		args     = None
+		tags      = None
+		taglist   = []
+		prefix    = None
+		username  = None
+		command   = None
+		args      = None
+		moderator = False
 
 		parts  = response.split(" ")
 		parts2 = response.split(" ")
@@ -148,6 +153,7 @@ while True:
 			if part.startswith('@'):
 				if tags is None:
 					tags = part[1:]
+					taglist = tags.split(";")
 					parts2.pop(0)
 
 			elif part.startswith(':'):
@@ -169,6 +175,11 @@ while True:
 		print "| username: '" + str(username) + "'"
 		print "| command:  '" + str(command) + "'"
 		print "| args:     '" + str(args) + "'"
+
+		if "mod=1" in taglist:
+			moderator = True
+		
+		print "| mod:      '" + str(moderator) + "'"
 
 		if command == 'PING':
 			print "Server sent PING, sending PONG"
@@ -237,7 +248,7 @@ while True:
 								say(output_queue,username + " has no hearts yet! BibleThump")
 
 						elif message.startswith("!setcmd"):
-							if username in MASTERS:
+							if moderator or username in MASTERS:
 								parts = message.split(" ")
 								if len(parts) >= 3:
 									cmd = parts[1]
@@ -252,7 +263,7 @@ while True:
 											print "EXCEPTION: " + str(type(ex)) + " " + str(ex)
 
 						elif message.startswith("!delcmd"):
-							if username in MASTERS:
+							if moderator or username in MASTERS:
 								parts = message.split(" ")
 								if len(parts) == 2:
 									cmd = parts[1]
